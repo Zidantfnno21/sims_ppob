@@ -1,8 +1,57 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+import 'package:provider/provider.dart';
+import 'package:sims_popb/config/providers.dart';
+import 'package:sims_popb/data/network/dio_interceptor.dart';
+import 'package:sims_popb/data/session_manager.dart';
+import 'package:sims_popb/feature/splash_screen.dart';
 
-void main() {
-  runApp(const MyApp());
+import 'data/network/service/rest_client.dart';
+
+Future main() async {
+  await dotenv.load(fileName: ".env");
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('id_ID', null);
+  runApp(
+      MultiProvider(
+        providers: appProviders,
+        child: MyApp(),
+      )
+  );
 }
+
+final apiService = RestClient(
+    dio: Dio(BaseOptions(
+      contentType: "application/json",
+      baseUrl: apiDomain,
+      followRedirects: false,
+    ))
+      ..interceptors.add(DioInterceptor(sessionManager: SessionManager()))
+      ..interceptors.add(PrettyDioLogger(
+        requestHeader: true,
+        requestBody: true,
+        responseBody: true,
+        responseHeader: false,
+        compact: false,
+      )));
+
+final apiServiceUpload = RestClient(
+    dio: Dio(BaseOptions(
+      contentType: "multipart/form-data",
+      baseUrl: apiDomain,
+      followRedirects: false,
+    ))
+      ..interceptors.add(DioInterceptor(sessionManager: SessionManager()))
+      ..interceptors.add(PrettyDioLogger(
+        requestHeader: true,
+        requestBody: true,
+        responseBody: true,
+        responseHeader: false,
+        compact: false,
+      )));
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -12,58 +61,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.redAccent),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      home: SplashScreen()
     );
   }
 }
